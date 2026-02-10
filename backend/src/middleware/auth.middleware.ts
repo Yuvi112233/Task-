@@ -7,6 +7,9 @@ export interface AuthRequest extends Request {
     id: string;
     username: string;
   };
+  body: any;
+  params: any;
+  headers: any;
 }
 
 export function generateToken(user: any): string {
