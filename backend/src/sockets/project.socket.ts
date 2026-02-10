@@ -6,11 +6,18 @@ import { env } from '../config/env.js';
 let io: SocketIOServer | null = null;
 
 export function initializeSocket(httpServer: HTTPServer): SocketIOServer {
+  const allowedOrigins = [
+    env.CLIENT_URL,
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ].filter(Boolean);
+
   io = new SocketIOServer(httpServer, {
     path: '/socket.io',
     cors: {
-      origin: env.CLIENT_URL,
-      credentials: true
+      origin: allowedOrigins,
+      credentials: true,
+      methods: ['GET', 'POST']
     }
   });
 
