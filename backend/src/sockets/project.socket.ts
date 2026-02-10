@@ -6,16 +6,25 @@ import { env } from '../config/env.js';
 let io: SocketIOServer | null = null;
 
 export function initializeSocket(httpServer: HTTPServer): SocketIOServer {
-  const allowedOrigins = [
-    env.CLIENT_URL,
-    'http://localhost:5173',
-    'http://localhost:3000',
-  ].filter(Boolean);
-
   io = new SocketIOServer(httpServer, {
     path: '/socket.io',
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        // Allow requests with no origin
+        if (!origin) return callback(null, true);
+        
+        // Allow localhost for development
+        if (origin.includes('localhost')) return callback(null, true);
+        
+        // Allow Vercel domains for frontend
+        if (origin.endsWith('.vercel.app')) return callback(null, true);
+        
+        // Allow specific CLIENT_URL if set
+        if (env.CLIENT_URL && origin === env.CLIENT_URL) return callback(null, true);
+        
+        // Reject all other origins
+        callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
       methods: ['GET', 'POST']
     }
