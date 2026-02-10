@@ -1,0 +1,174 @@
+You are a Senior Full-Stack MERN Architect.
+
+I am building an INTERNAL REAL-TIME PROJECT MANAGEMENT SYSTEM as part of a hiring task.
+This system must support real-time task updates across multiple users.
+
+IMPORTANT CONSTRAINTS:
+- Planning & design is mandatory before coding.
+- Frontend and backend must be in SEPARATE folders.
+- Frontend and backend run on DIFFERENT ports locally.
+- Backend will be deployed on Render.
+- Frontend will be deployed on Vercel (free plan).
+- All decisions must be explainable in an interview.
+
+------------------------------------------------
+PROJECT STRUCTURE (MANDATORY)
+------------------------------------------------
+
+root/
+├─ backend/
+├─ frontend/
+└─ docs/
+
+------------------------------------------------
+PHASE 1 – PLANNING (NO CODING)
+------------------------------------------------
+
+Create the following Markdown files inside `/docs`.
+
+### 1️⃣ docs/FRD.md
+Write a professional Functional Requirement Document (1–2 pages max) including:
+- Overview
+- Core Features
+- User Roles & Permissions
+- Assumptions
+- Out-of-Scope items
+
+This is an INTERNAL TOOL.
+No UI details. No implementation details.
+
+---
+
+### 2️⃣ docs/SYSTEM_DESIGN.md
+This is the MOST IMPORTANT document.
+
+Include:
+- High-level architecture (frontend ↔ backend separation)
+- API list (endpoint + purpose)
+- MongoDB schema design
+- Real-time communication strategy using Socket.IO
+- Redis usage for pub/sub & scalability
+- JWT authentication flow
+- Why Socket.IO is chosen over polling or webhooks for UI real-time updates
+- Scalability considerations
+- Design trade-offs
+
+REAL-TIME REQUIREMENT:
+- User A updates task status
+- User B (already online) sees update instantly
+- User C opens later and sees latest state
+
+STOP AFTER PHASE 1.
+DO NOT GENERATE ANY CODE YET.
+WAIT FOR CONFIRMATION.
+
+------------------------------------------------
+PHASE 2 – BACKEND (AFTER CONFIRMATION)
+------------------------------------------------
+
+Backend folder: `/backend`
+
+Tech stack:
+- Node.js
+- Express
+- MongoDB
+- JWT Authentication
+- Socket.IO
+- Redis
+
+Run locally using nodemon on a separate port.
+
+Mandatory backend structure:
+
+backend/src/
+├─ controllers/
+├─ services/
+├─ routes/
+├─ models/
+├─ sockets/
+├─ middleware/
+├─ config/
+└─ app.js
+
+Rules:
+- Controllers handle request/response only
+- Services handle business logic
+- Socket authentication required
+- Centralized error handling
+- Input validation
+- No hardcoded values
+
+------------------------------------------------
+PHASE 3 – FRONTEND
+------------------------------------------------
+
+Frontend folder: `/frontend`
+
+Tech:
+- React
+- State management (Context API or Zustand – justify choice)
+
+Run frontend on a different port.
+
+Screens:
+- Login
+- Project list
+- Task board (real-time)
+
+Requirements:
+- REST API for initial data load
+- Socket.IO for real-time updates
+- Clean API & socket abstraction
+- Error and loading states
+
+------------------------------------------------
+PHASE 4 – DEPLOYMENT
+------------------------------------------------
+
+Backend:
+- Deploy on Render
+- Environment variables
+- MongoDB secured
+- Socket support enabled
+
+Frontend:
+- Deploy on Vercel (free plan)
+- Environment-based API URLs
+
+CI/CD:
+- GitHub Actions pipeline
+- Lint, build, deploy steps
+- Branching strategy explanation
+
+------------------------------------------------
+PHASE 5 – DOCUMENTATION
+------------------------------------------------
+
+Generate README.md files for:
+- Root project
+- Backend
+- Frontend
+
+Include:
+- Architecture overview
+- API list
+- Socket events list
+- Local setup steps
+- Deployment URLs (placeholders)
+
+------------------------------------------------
+PHASE 6 – LOOM VIDEO SCRIPT
+------------------------------------------------
+
+Generate an 8–10 minute Loom script explaining:
+1. Overall architecture
+2. Real-time socket flow
+3. One backend API (line-by-line)
+4. One socket event lifecycle
+5. Deployment setup
+6. One technical mistake and fix
+
+If AI is used, ensure all code and decisions are fully explainable.
+
+START WITH PHASE 1 ONLY.
+WAIT FOR CONFIRMATION BEFORE CONTINUING.
