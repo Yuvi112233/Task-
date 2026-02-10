@@ -1,108 +1,128 @@
 # System Design Document
-## Project: Internal Real-Time Project Management System
 
-### 1. High-Level Architecture
-The system follows a decoupled **MERN (MongoDB, Express, React, Node.js)** architecture, ensuring separation of concerns and scalability.
+## 1. High-Level Architecture
 
-- **Frontend (Client)**: React Single Page Application (SPA) deployed on Vercel. Consumes REST APIs and connects via WebSocket (Socket.IO).
-- **Backend (Server)**: Node.js/Express REST API deployed on Render. Handles business logic, database interactions, and WebSocket events.
-- **Database**: MongoDB (NoSQL) for flexible schema design.
-- **Real-Time Layer**: Socket.IO for bidirectional communication.
-- **Caching/PubSub**: Redis used as a Socket.IO adapter to support horizontal scaling (allowing multiple backend instances to broadcast events correctly).
+The system follows a client-server architecture with real-time
+communication.
 
-```mermaid
-graph TD
-    Client[React Frontend] <-->|REST API| LB[Load Balancer / Gateway]
-    Client <-->|Socket.IO| LB
-    LB --> Server[Node.js Backend]
-    Server -->|Read/Write| DB[(MongoDB)]
-    Server <-->|Pub/Sub| Redis[(Redis)]
-```
+- Frontend: React application running independently
+- Backend: Node.js + Express REST API
+- Database: MongoDB (source of truth)
+- Real-time Layer: Socket.IO
+- Authentication: JWT (stateless)
 
-### 2. API Design (REST)
-All API endpoints will be prefixed with `/api`.
+Frontend and backend are deployed and scaled independently.
 
-| Method | Endpoint | Purpose | Access |
-| :--- | :--- | :--- | :--- |
-| **Auth** | | | |
-| POST | `/auth/login` | Authenticate user & return JWT | Public |
-| GET | `/auth/me` | Get current user details | Protected |
-| **Projects** | | | |
-| GET | `/projects` | List all projects | Protected |
-| POST | `/projects` | Create a new project | Protected |
-| GET | `/projects/:id` | Get project details | Protected |
-| **Tasks** | | | |
-| GET | `/projects/:id/tasks` | Get tasks for a project | Protected |
-| POST | `/tasks` | Create a new task | Protected |
-| PUT | `/tasks/:id` | Update task (status, assignee, etc.) | Protected |
-| DELETE | `/tasks/:id` | Delete a task | Protected |
+---
 
-### 3. Database Schema (MongoDB)
-*Note: Using Mongoose for modeling.*
+## 2. Architecture Flow
 
-**User Schema**
-```json
-{
-  "_id": "ObjectId",
-  "username": "String (Unique)",
-  "password": "String (Hashed)",
-  "role": "String ('admin', 'member')",
-  "createdAt": "Date"
-}
-```
+1. Frontend loads initial data using REST APIs
+2. User connects to Socket.IO after authentication
+3. User joins a project-specific socket room
+4. Any task update is persisted in MongoDB
+5. Backend emits a socket event to the project room
+6. All connected clients receive updates instantly
+7. Users joining later fetch the latest state from MongoDB
 
-**Project Schema**
-```json
-{
-  "_id": "ObjectId",
-  "name": "String",
-  "description": "String",
-  "owner": "ObjectId (Ref: User)",
-  "members": ["ObjectId (Ref: User)"],
-  "createdAt": "Date"
-}
-```
+---
 
-**Task Schema**
-```json
-{
-  "_id": "ObjectId",
-  "title": "String",
-  "description": "String",
-  "status": "String ('TODO', 'IN_PROGRESS', 'DONE')",
-  "project": "ObjectId (Ref: Project)",
-  "assignee": "ObjectId (Ref: User)",
-  "priority": "String ('LOW', 'MEDIUM', 'HIGH')",
-  "createdAt": "Date"
-}
-```
+## 3. Backend Architecture
 
-### 4. Real-Time Strategy (Socket.IO)
-We choose **Socket.IO** over polling or Webhooks because:
-1.  **Low Latency**: Push-based updates are instant compared to polling intervals.
-2.  **Efficiency**: Reduces server load by avoiding redundant HTTP requests.
-3.  **Room Support**: Built-in support for "rooms" allows us to scope events to specific projects (e.g., only users viewing Project A get updates for Project A).
+The backend follows a layered architecture:
 
-**Socket Events**
-- `join_project`: Client joins a room named `project:{projectId}`.
-- `task_created`: Server emits when a task is created. Payload: `{ task }`.
-- `task_updated`: Server emits when status/details change. Payload: `{ taskId, updates }`.
-- `task_deleted`: Server emits when a task is removed. Payload: `{ taskId }`.
+- **Routes**: Define API endpoints
+- **Controllers**: Handle request/response
+- **Services**: Business logic
+- **Models**: MongoDB schemas
+- **Sockets**: Real-time event handling
+- **Middleware**: Authentication and error handling
+- **Config**: Environment variables and DB connection
 
-**Redis for Scalability**
-- We will use the `@socket.io/redis-adapter`.
-- Redis acts as a message broker (Pub/Sub).
-- If we scale the backend to multiple instances (dynos) on Render, User A connected to Instance 1 can update a task, and User B connected to Instance 2 will still receive the update because the event is published to Redis and subscribed to by all instances.
+### File Responsibilities
+- `app.ts`: Express app configuration and route registration
+- `index.ts`: Server startup and Socket.IO initialization
 
-### 5. Authentication Flow (JWT)
-1.  User posts credentials to `/auth/login`.
-2.  Server verifies hash, generates a **JWT (JSON Web Token)** signed with a secret.
-3.  Server returns JWT.
-4.  Client stores JWT (HTTPOnly Cookie preferred, or LocalStorage for this MVP).
-5.  **REST Requests**: Client sends `Authorization: Bearer <token>` header.
-6.  **Socket Connection**: Client sends token during handshake `auth: { token }`. Socket middleware verifies JWT before allowing connection.
+---
 
-### 6. Design Trade-offs
-- **MongoDB vs SQL**: Chosen MongoDB for flexible schema as task attributes might evolve (e.g., custom fields).
-- **Socket.IO vs Native WS**: Socket.IO adds overhead but handles reconnection, fallbacks, and room logic automatically, which speeds up development.
-- **REST vs GraphQL**: REST is sufficient for the defined scope and easier to secure/rate-limit for standard resource operations.
+## 4. API Design (Sample)
+
+### Authentication
+- POST `/api/auth/login` – Login user
+- GET `/api/auth/me` – Get current user
+
+### Projects
+- GET `/api/projects` – Fetch user projects
+- POST `/api/projects` – Create project
+
+### Tasks
+- GET `/api/projects/:projectId/tasks` – Fetch tasks
+- POST `/api/projects/:projectId/tasks` – Create task
+- PUT `/api/tasks/:id` – Update task
+- DELETE `/api/tasks/:id` – Delete task
+
+---
+
+## 5. Database Design (MongoDB)
+
+### User
+- id
+- username
+- password (hashed)
+- role
+
+### Project
+- id
+- name
+- members[]
+
+### Task
+- id
+- title
+- status (todo | in_progress | done)
+- priority
+- projectId
+- assigneeId
+
+---
+
+## 6. Real-Time Communication Strategy
+
+- Socket.IO is used for real-time updates
+- Each project represents a socket room
+- Users join the room when opening a project
+- Task events are broadcast only to that room
+- Events are emitted **after** successful database writes
+
+### Socket Events
+- `join_project`
+- `task_created`
+- `task_updated`
+- `task_deleted`
+
+---
+
+## 7. Authentication Flow
+
+1. User logs in via REST API
+2. Backend validates credentials and issues JWT
+3. JWT is sent with subsequent API requests
+4. Socket connection is authenticated using JWT
+5. Protected routes and socket events require valid token
+
+---
+
+## 8. Scalability Considerations
+- Stateless REST APIs
+- Socket rooms reduce unnecessary broadcasts
+- MongoDB as single source of truth
+- Architecture supports horizontal scaling
+- Redis can be added for Socket.IO pub/sub if needed
+
+---
+
+## 9. Design Decisions & Trade-offs
+- Socket.IO chosen over polling/webhooks for instant UI updates
+- REST APIs used for reliability and statelessness
+- Separate frontend/backend for independent deployment
+- JWT chosen for simplicity and scalability
