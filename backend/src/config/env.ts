@@ -5,5 +5,5 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   JWT_SECRET: process.env.JWT_SECRET || 'default_secret_key',
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/project-management',
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
+  CLIENT_URL: process.env.CLIENT_URL, // Optional - CORS allows Vercel domains by default
 };
